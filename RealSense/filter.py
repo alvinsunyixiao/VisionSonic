@@ -51,7 +51,7 @@ def find_obstacle(f):
 	#plt.show()
 	return f_b / 255
 
-def filter_image(f, std):
+def filter_img(f, std):
 	ff = filter_img_gaussian(f, 5)
 	fb = find_obstacle(ff)
 	return f * fb
