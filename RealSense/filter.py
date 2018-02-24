@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.ndimage.filters as filters
+from scipy import ndimage
 import cv2
 import matplotlib.pyplot as plt 
 
@@ -18,47 +19,73 @@ def create_test_img(shape):
 	f_n = f / f.max() * 255
 	#f_n = f_n.astype('uint8')
 	print(f_n)
-	plt.pcolormesh(f_n)
+	plt.imshow(f_n)
 	plt.show()
 	return f
 
 def read_from_file(path):
 	file = np.load(path)
 	print(file)
-	file = file * 255 / file.max() 
-	plt.pcolormesh(file)
+	#file = file * 255 / file.max() 
+	#file[file > file.max() / 6] = 0
+	# file[file > 1000] = 0
+	plt.imshow(file)
 	plt.show()
 	return file
 
 def filter_img_gaussian(f, std):
 	f = filters.gaussian_filter(f, std)
-	f = f * 255 / f.max() 
+	#f[f > f.max() / 2] = 0
+	#f = f * 255 / 0x100000
 	#f = f.astype('uint8')
 	#print(f) 
-	#plt.pcolormesh(f)
-	#plt.show()
+	plt.imshow(f)
+	plt.show()
 	return f
 
-def find_obstacle(f):
-	f = f * 255 / f.max()
-	f = f.astype('uint8')
+def find_obstacle(im):
+	#f = f * 255 / f.max()
+	# f = f.astype('uint8')
 	#f_b = cv2.adaptiveThreshold(f, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 13, 2)
-	ret,f_b = cv2.threshold(f, 127, 255, cv2.THRESH_BINARY)
-	kernel = np.ones((5,5))
-	f_b = cv2.morphologyEx(f_b, cv2.MORPH_OPEN, kernel) # cv2.erode(f_b, kernel, iterations=1)
+	#ret,f_b = cv2.threshold(f, 127, 255, cv2.THRESH_BINARY)
+	# plt.imshow(f)
+	# plt.show()
+	#kernel = np.ones((5,5))
+	#f = cv2.morphologyEx(f, cv2.MORPH_OPEN, kernel) # cv2.erode(f_b, kernel, iterations=1)
 	#print(f_b)
 	#plt.pcolormesh(f_b)
 	#plt.show()
-	return f_b / 255
+	return f_b
 
-def filter_img(f, std):
-	ff = filter_img_gaussian(f, 5)
-	fb = find_obstacle(ff)
-	return f * fb
+def filter_img(im, std):
+	im[im > 1000] = 0
 
-#f = read_from_file('debug.npy')
+	img = filter_img_gaussian(im, std)
+
+	mask = (img > im.mean()).astype(np.float)
+
+	img = mask + 0.2 * np.random.randn(*mask.shape)
+
+	binary_img = img > 0.5
+	
+	plt.imshow(binary_img)
+	plt.show()
+
+	# Remove small white regions
+	open_img = ndimage.binary_opening(binary_img)
+	# Remove small black hole
+	close_img = ndimage.binary_closing(open_img)
+	
+	im[close_img == 0] = 0
+
+
+
+	return im
+
+f = read_from_file('debug.npy')
 #f = create_test_img(f.shape)
 #ff = filter_img(f, 5)
 #fb = find_obstacle(ff)
-#plt.pcolormesh(f * fb)
-#plt.show()
+fff = filter_img(f, 5)
+plt.imshow(fff)
+plt.show()

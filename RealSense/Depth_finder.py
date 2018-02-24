@@ -5,8 +5,9 @@ from scipy import ndimage
 im= np.load("debug.npy")
 np.set_printoptions(threshold=np.nan)
 #print(img)
-im[im>600]=0
-#print(img)
+im[im>1000]=0
+plt.imshow(im)
+plt.show()
 
 
 l = 25
