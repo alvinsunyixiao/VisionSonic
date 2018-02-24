@@ -39,8 +39,8 @@ def filter_img_gaussian(f, std):
 	#f = f * 255 / 0x100000
 	#f = f.astype('uint8')
 	#print(f) 
-	plt.imshow(f)
-	plt.show()
+	#plt.imshow(f)
+	#plt.show()
 	return f
 
 def find_obstacle(im):
