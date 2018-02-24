@@ -10,7 +10,7 @@ from pyrealsense.constants import rs_option
 from filter import filter_img
 
 depth_fps = 60
-depth_stream = pyrs.stream.DepthStream(fps=depth_fps)
+depth_stream = pyrs.stream.DepthStream(fps=depth_fps, width=320, height=240)
 
 
 def convert_z16_to_bgr(frame):
@@ -67,11 +67,15 @@ with pyrs.Service() as serv:
             dev.wait_for_frames()
             frame = dev.depth
             print frame[frame.shape[0] / 2, frame.shape[1] / 2]
-            d = convert_z16_to_bgr(frame)
-            cv2.putText(d, str(fps_smooth)[:4], (0, 50), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255))
+            #d = convert_z16_to_bgr(frame)
+            #cv2.putText(d, str(fps_smooth)[:4], (0, 50), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255))
             
-            frame = frame * 255 / frame.max()
-            cv2.imshow('', d)
-            cv2.imshow('1', filter_img(frame, 3));
-            if cv2.waitKey(1) & 0xFF == ord('q'):
+            #cv2.imshow('', d)
+            f_img = filter_img(frame.copy(),1)
+            cv2.imshow('1', f_img.astype('float32') / 0x1000)
+            cv2.imshow('2', frame.astype('float32') / 0x1000) 
+            key = cv2.waitKey(1)
+            if key & 0xFF == ord('q'):
                 break
+            elif key & 0xFF == ord('s'):
+                np.save('debug', f_img)
