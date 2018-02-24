@@ -1,6 +1,6 @@
 import numpy as np
 import scipy.ndimage.filters as filters
-#import cv2
+import cv2
 import matplotlib.pyplot as plt 
 
 def create_test_img(shape):
@@ -25,28 +25,40 @@ def create_test_img(shape):
 def read_from_file(path):
 	file = np.load(path)
 	print(file)
-	#file = file / file.max() * 255
-	#plt.pcolormesh(file)
-	#plt.show()
+	file = file * 255 / file.max() 
+	plt.pcolormesh(file)
+	plt.show()
 	return file
 
-def filter_img(f, std):
+def filter_img_gaussian(f, std):
 	f = filters.gaussian_filter(f, std)
-	#f = f * 255 / f.max() 
+	f = f * 255 / f.max() 
 	#f = f.astype('uint8')
 	#print(f) 
 	#plt.pcolormesh(f)
 	#plt.show()
 	return f
 
-def find_obstacle(f, threshold):
-	f = (f >= threshold)
-	print(f)
-	#plt.pcolormesh(f)
+def find_obstacle(f):
+	f = f * 255 / f.max()
+	f = f.astype('uint8')
+	#f_b = cv2.adaptiveThreshold(f, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 13, 2)
+	ret,f_b = cv2.threshold(f, 127, 255, cv2.THRESH_BINARY)
+	kernel = np.ones((5,5))
+	f_b = cv2.morphologyEx(f_b, cv2.MORPH_OPEN, kernel) # cv2.erode(f_b, kernel, iterations=1)
+	#print(f_b)
+	#plt.pcolormesh(f_b)
 	#plt.show()
-	return (f)
+	return f_b / 255
+
+def filter_image(f, std):
+	ff = filter_img_gaussian(f, 5)
+	fb = find_obstacle(ff)
+	return f * fb
 
 #f = read_from_file('debug.npy')
 #f = create_test_img(f.shape)
-#f = filter_img(f, 3)
-#find_obstacle(f, f.max() / 5 * 4)
+#ff = filter_img(f, 5)
+#fb = find_obstacle(ff)
+#plt.pcolormesh(f * fb)
+#plt.show()
