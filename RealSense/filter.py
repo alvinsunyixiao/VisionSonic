@@ -39,8 +39,8 @@ def filter_img_gaussian(f, std):
 	#f = f * 255 / 0x100000
 	#f = f.astype('uint8')
 	#print(f) 
-	#plt.imshow(f)
-	#plt.show()
+	plt.imshow(f)
+	plt.show()
 	return f
 
 def find_obstacle(im):
@@ -58,7 +58,7 @@ def find_obstacle(im):
 	return f_b
 
 def filter_img(im, std):
-	im[im > 1000] = 0
+	im[im > im.mean() * 2] = 0
 
 	img = filter_img_gaussian(im, std)
 
@@ -78,14 +78,12 @@ def filter_img(im, std):
 	
 	im[close_img == 0] = 0
 
-
-
 	return im
 
-#f = read_from_file('debug.npy')
-#f = create_test_img(f.shape)
-#ff = filter_img(f, 5)
-#fb = find_obstacle(ff)
-#fff = filter_img(f, 5)
-#plt.imshow(fff)
-#plt.show()
+# f = read_from_file('debug.npy')
+# #f = create_test_img(f.shape)
+# #ff = filter_img(f, 5)
+# #fb = find_obstacle(ff)
+# fff = filter_img(f, 5)
+# plt.imshow(fff)
+# plt.show()
