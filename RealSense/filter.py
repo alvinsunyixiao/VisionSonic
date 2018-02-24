@@ -68,8 +68,8 @@ def filter_img(im, std):
 
 	binary_img = img > 0.5
 	
-	plt.imshow(binary_img)
-	plt.show()
+	#plt.imshow(binary_img)
+	#plt.show()
 
 	# Remove small white regions
 	open_img = ndimage.binary_opening(binary_img)
@@ -82,10 +82,10 @@ def filter_img(im, std):
 
 	return im
 
-f = read_from_file('debug.npy')
+#f = read_from_file('debug.npy')
 #f = create_test_img(f.shape)
 #ff = filter_img(f, 5)
 #fb = find_obstacle(ff)
-fff = filter_img(f, 5)
-plt.imshow(fff)
-plt.show()
+#fff = filter_img(f, 5)
+#plt.imshow(fff)
+#plt.show()
