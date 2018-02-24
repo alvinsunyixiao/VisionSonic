@@ -4,19 +4,7 @@ import os
 import sys
 import wave
 from openal.audio import SoundData
-
-__all__ = ["load_wav_file", "load_file"]
-
-
-def load_wav_file(fname):
-    """Loads a WAV encoded audio file into a SoundData object."""
-    fp = wave.open(fname, "rb")
-    channels = fp.getnchannels()
-    bitrate = fp.getsampwidth() * 8
-    samplerate = fp.getframerate()
-    buf = fp.readframes(fp.getnframes())
-    return SoundData(buf, channels, bitrate, len(buf), samplerate)
-
+from openal.loaders import load_wav_file
 import time
 import math
 from openal.audio import SoundSink, SoundSource, SoundListener
