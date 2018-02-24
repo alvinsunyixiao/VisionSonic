@@ -18,7 +18,6 @@ if __name__ == "__main__":
     source1.looping = True
     source2 = SoundSource(position=[0, 0, 3],pitch=2.0)
     source2.looping = True
-    data1 = load_wav_file("./hey2.wav")
     data2 = load_wav_file("./hey.wav")
     source1.queue(data2)
     source2.queue(data2)

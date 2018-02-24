@@ -8,6 +8,7 @@ import pyrealsense as pyrs
 from pyrealsense.constants import rs_option
 from IPython import embed
 from filter import filter_img
+import stereosound
 
 DEPTH_FPS = 60
 WIDTH = 320
@@ -19,6 +20,8 @@ K_Y = np.tan(SI_Y/2)
 
 depth_stream = pyrs.stream.DepthStream(fps=DEPTH_FPS, width=WIDTH, height=HEIGHT)
 
+def naive_avg_distance(frame, x_coo, y_coo):
+    return np.mean(frame[y_coo-3:y_coo+3, x_coo-3:x_coo+3])
 
 def convert_z16_to_bgr(frame):
     '''Performs depth histogram normalization
@@ -65,7 +68,7 @@ with pyrs.Service() as serv:
     with serv.Device(streams=(depth_stream,)) as dev:
 
         dev.apply_ivcam_preset(0)
-        
+
         try:  # set custom gain/exposure values to obtain good depth image
             custom_options = [(rs_option.RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED, 1),
                               (rs_option.RS_OPTION_R200_LR_GAIN, 100)]
@@ -76,7 +79,8 @@ with pyrs.Service() as serv:
         cnt = 0
         last = time.time()
         smoothing = 0.9
-        fps_smooth = DEPTH_FPS 
+        fps_smooth = DEPTH_FPS
+        stereo = stereosound.stereosound()
 
         while True:
             cnt += 1
@@ -92,7 +96,7 @@ with pyrs.Service() as serv:
             print frame[frame.shape[0] / 2, frame.shape[1] / 2]
             #d = convert_z16_to_bgr(frame)
             #cv2.putText(d, str(fps_smooth)[:4], (0, 50), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255))
-            
+
             #cv2.imshow('', d)
             f_img = filter_img(frame.copy(),1)
             temp_img = f_img.copy()
@@ -107,9 +111,11 @@ with pyrs.Service() as serv:
             #cv2.drawContours(temp_img, contours, -1, (0, 0, 255), 3)
             for x, y in m:
                 cv2.circle(temp_img, (x, y), 6, (0, 0, 255), thickness = 4)
-                print transform(x,y, frame[y, x])    
-            cv2.imshow('1', f_img.astype('float32') / 0x1000)
-            cv2.imshow('2', frame.astype('float32') / 0x1000)
+                cart_tuple = transform(x,y, frame[y, x])
+                avg_value = naive_avg_distance(frame, x ,y)
+                stereo.play(cart_tuple, avg_value)
+            #cv2.imshow('1', f_img.astype('float32') / 0x1000)
+            #cv2.imshow('2', frame.astype('float32') / 0x1000)
             cv2.imshow('3', temp_img)
             key = cv2.waitKey(1)
             if key & 0xFF == ord('q'):

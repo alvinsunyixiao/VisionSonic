@@ -4,6 +4,7 @@ from scipy import ndimage
 import cv2
 import matplotlib.pyplot as plt
 from IPython import embed
+import config
 
 def create_test_img(shape):
 	width = shape[0]
@@ -27,7 +28,7 @@ def create_test_img(shape):
 def read_from_file(path):
 	file = np.load(path)
 	print(file)
-	#file = file * 255 / file.max() 
+	#file = file * 255 / file.max()
 	#file[file > file.max() / 6] = 0
 	# file[file > 1000] = 0
 	plt.imshow(file)
@@ -39,7 +40,7 @@ def filter_img_gaussian(f, std):
 	#f[f > f.max() / 2] = 0
 	#f = f * 255 / 0x100000
 	#f = f.astype('uint8')
-	#print(f) 
+	#print(f)
 	#plt.imshow(f)
 	#plt.show()
 	return f
@@ -59,7 +60,7 @@ def find_obstacle(im):
 	return f_b
 
 def filter_img(im, std):
-	im[im > 2000] = 0
+	im[im > config.MAX_DISTANCE] = 0
 
 	img = filter_img_gaussian(im, std)
 
@@ -68,7 +69,7 @@ def filter_img(im, std):
 	img = mask + 0.2 * np.random.randn(*mask.shape)
 
 	binary_img = img > 0.5
-	
+
 	#plt.imshow(binary_img)
 	#plt.90show()
         kernel = np.ones((5,5))
@@ -79,7 +80,7 @@ def filter_img(im, std):
 	#open_img = ndimage.binary_opening(binary_img)
 	# Remove small black hole
 	#close_img = ndimage.binary_closing(open_img)
-	
+
 	im[close_img == 0] = 0
 
 	return im
