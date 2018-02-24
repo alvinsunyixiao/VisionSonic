@@ -6,11 +6,18 @@ import numpy as np
 import cv2
 import pyrealsense as pyrs
 from pyrealsense.constants import rs_option
-
+from IPython import embed
 from filter import filter_img
 
-depth_fps = 60
-depth_stream = pyrs.stream.DepthStream(fps=depth_fps, width=320, height=240)
+DEPTH_FPS = 60
+WIDTH = 320
+HEIGHT = 240
+SI_X = np.deg2rad(59)
+SI_Y = np.deg2rad(46)
+K_X = np.tan(SI_X/2)
+K_Y = np.tan(SI_Y/2)
+
+depth_stream = pyrs.stream.DepthStream(fps=DEPTH_FPS, width=WIDTH, height=HEIGHT)
 
 
 def convert_z16_to_bgr(frame):
@@ -36,6 +43,23 @@ def convert_z16_to_bgr(frame):
     rgb_frame[zeros, 2] = 0
     return rgb_frame
 
+def transform(x, y, d):
+    y_obj = d
+    x_obj = 1.0*d*(x-WIDTH/2)/WIDTH*K_X
+    z_obj = 1.0*d*(y-HEIGHT/2)/HEIGHT*K_Y
+    return x_obj, y_obj, z_obj
+
+def bound_contours_with_size_filter(filtered_img):
+	_, contours, hierarchy = cv2.findContours(filtered_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+	#contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 400]
+	areas = []
+	for i in range(len(contours)):
+		areas.append(cv2.contourArea(contours[i]))
+	contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 1000]
+	if len(contours) <= 2:
+	    return contours
+	#too many point!
+	return contours
 
 with pyrs.Service() as serv:
     with serv.Device(streams=(depth_stream,)) as dev:
@@ -52,10 +76,9 @@ with pyrs.Service() as serv:
         cnt = 0
         last = time.time()
         smoothing = 0.9
-        fps_smooth = depth_fps
+        fps_smooth = DEPTH_FPS 
 
         while True:
-
             cnt += 1
             if (cnt % 30) == 0:
                 now = time.time()
@@ -72,10 +95,27 @@ with pyrs.Service() as serv:
             
             #cv2.imshow('', d)
             f_img = filter_img(frame.copy(),1)
+            temp_img = f_img.copy()
+            temp_img = temp_img.astype('float32') / 0x1000
+            temp_img *= 255
+            temp_img = temp_img.astype('uint8')
+            contours = bound_contours_with_size_filter(temp_img)
+            m = [cv2.moments(i) for i in contours]
+            m = [(int(i['m10'] / i['m00']), int(i['m01'] / i['m00'])) for i in m]
+            #print contours
+            temp_img = cv2.cvtColor(temp_img, cv2.COLOR_GRAY2RGB)
+            #cv2.drawContours(temp_img, contours, -1, (0, 0, 255), 3)
+            for x, y in m:
+                cv2.circle(temp_img, (x, y), 6, (0, 0, 255), thickness = 4)
+                print transform(x,y, frame[y, x])    
             cv2.imshow('1', f_img.astype('float32') / 0x1000)
-            cv2.imshow('2', frame.astype('float32') / 0x1000) 
+            cv2.imshow('2', frame.astype('float32') / 0x1000)
+            cv2.imshow('3', temp_img)
             key = cv2.waitKey(1)
             if key & 0xFF == ord('q'):
                 break
             elif key & 0xFF == ord('s'):
                 np.save('debug', f_img)
+            elif key & 0xFF == ord('p'):
+                while cv2.waitKey(0) & 0xFF != ord('c'):
+                    pass

@@ -2,7 +2,8 @@ import numpy as np
 import scipy.ndimage.filters as filters
 from scipy import ndimage
 import cv2
-import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt
+from IPython import embed
 
 def create_test_img(shape):
 	width = shape[0]
@@ -69,12 +70,15 @@ def filter_img(im, std):
 	binary_img = img > 0.5
 	
 	#plt.imshow(binary_img)
-	#plt.show()
-
+	#plt.90show()
+        kernel = np.ones((5,5))
+	kernel2 = np.ones((7, 7))
+        open_img = cv2.morphologyEx(binary_img.astype("uint8"), cv2.MORPH_OPEN, kernel, iterations = 2)
+	close_img = cv2.morphologyEx(open_img, cv2.MORPH_CLOSE, kernel2, iterations = 2)
 	# Remove small white regions
-	open_img = ndimage.binary_opening(binary_img)
+	#open_img = ndimage.binary_opening(binary_img)
 	# Remove small black hole
-	close_img = ndimage.binary_closing(open_img)
+	#close_img = ndimage.binary_closing(open_img)
 	
 	im[close_img == 0] = 0
 
