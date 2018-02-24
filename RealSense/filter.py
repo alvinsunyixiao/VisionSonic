@@ -32,11 +32,11 @@ def read_from_file(path):
 
 def filter_img(f, std):
 	f = filters.gaussian_filter(f, std)
-	f = f / f.max() * 255
+	f = f * 255 / f.max() 
 	#f = f.astype('uint8')
-	print(f) 
-	plt.pcolormesh(f)
-	plt.show()
+	#print(f) 
+	#plt.pcolormesh(f)
+	#plt.show()
 	return f
 
 def find_obstacle(f, threshold):
@@ -46,7 +46,7 @@ def find_obstacle(f, threshold):
 	plt.show()
 	return (f)
 
-f = read_from_file('debug.npy')
+#f = read_from_file('debug.npy')
 #f = create_test_img(f.shape)
-f = filter_img(f, 3)
-find_obstacle(f, f.max() / 5 * 4)
+#f = filter_img(f, 3)
+#find_obstacle(f, f.max() / 5 * 4)
