@@ -1,1 +1,0 @@
-# HackIllinois2018

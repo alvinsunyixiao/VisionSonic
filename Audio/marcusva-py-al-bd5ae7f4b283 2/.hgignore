@@ -1,9 +1,0 @@
-syntax: glob
-.settings
-*project
-*.pyc
-*~
-*.class
-*.core
-build
-doc/html
