@@ -58,7 +58,7 @@ def find_obstacle(im):
 	return f_b
 
 def filter_img(im, std):
-	im[im > im.mean() * 2] = 0
+	im[im > 2000] = 0
 
 	img = filter_img_gaussian(im, std)
 
