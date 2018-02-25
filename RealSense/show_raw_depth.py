@@ -162,12 +162,13 @@ with pyrs.Service() as serv:
             for label, confidence, bbox in r:
                 #embed()
                 if label == "person":
-                    print "person cases!"
                     #hardcoded case
                     dire = direction_generator(bbox[0], bbox[1])
                     #temp_dire_visited_list.append(dire)
-                    am.play("person", dire)
-                        #person_to_be_close.append(dire)
+                    if visited_dict["person"][dire] == False:
+                        print "play cases!"
+                        am.play("person", dire)
+                        #visited_dict["person"][dire] = True
                 bbox = np.array(bbox, dtype='int')
                 cv2.rectangle(square, (bbox[0]-bbox[2]/2, bbox[1]-bbox[3]/2), (bbox[0]+bbox[2]/2, bbox[1]+bbox[3]/2), (255,0,0), 2)
                 cv2.putText(square,
@@ -180,13 +181,11 @@ with pyrs.Service() as serv:
 
             #temp_dire_visited_list = set(temp_dire_visited_list)
             #person_to_be_close = person_all - temp_dire_visited_list
-            '''
             for i in person_to_be_close:
                 if am.is_active("person", i):
                     #is active and not in current frame
                     am.stop("person", i)
                     visited_dict["person"][i] = False
-            '''
             depth_raw = dev.depth
             f_img = filter_img(depth_raw.copy(),1)
             temp_img = f_img.copy()

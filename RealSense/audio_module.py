@@ -35,10 +35,15 @@ class audio_module:
         self.single_thread_pool = []
 
     def play(self, obj, dire):
+        for n, pool_struct in enumerate(self.single_thread_pool):
+            if pool_struct[0].is_alive():
+                if pool_struct[1] == obj and pool_struct[2] == dire:
+                    #is playing and obj name and direc mateched
+                    return
         if obj == "dog" or obj == "person":
             t = single_audio_mod.WavePlayerSingle(mystery_dict[obj][dire])
             t.start()
-            self.single_thread_pool.append(t)
+            self.single_thread_pool.append([t, obj, dire])
         else:
             num = keyword_2_ind(obj, dire)
             self.thread_pool[num][0].start() #no blocking
