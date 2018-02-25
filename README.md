@@ -1,13 +1,13 @@
-Vision Sonic
+#Vision Sonic
 
-Created in HackIllinois2018 by Vision Sonic team
+##Created in HackIllinois2018 by Vision Sonic team
 
-Installation Guide
+##Installation Guide
  Hardware
  Nvidia TX2
  Intel RealSense R200
 
- Dependency
+##Dependency
  python 2.7
  opencv
  Intel RealSense
@@ -18,7 +18,7 @@ Installation Guide
  wave
  JetPack SDK 3.2
 
- Guide(on Ubuntu)
+##Guide(on Ubuntu)
  sudo apt-get install python-dev
  sudo apt-get install pip
  Follow opencv github page's guide to build from source.
@@ -27,11 +27,7 @@ Installation Guide
  sudo pip install wave
  Follow Yolo's website to setup darknet enviroment on Linux-Python
 
+##Simple start guide
 
-Simple start guide
- 
  Download Yolo's weight file from Yolo's website
  python2 demo_run.py
-
-
- 
