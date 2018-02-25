@@ -1,6 +1,6 @@
 # Vision Sonic
 
-## Created in HackIllinois2018 by Vision Sonic team
+Created in HackIllinois2018 by Vision Sonic team
 
 ## Installation Guide
  Hardware
