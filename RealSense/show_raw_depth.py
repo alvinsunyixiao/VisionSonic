@@ -9,16 +9,54 @@ from pyrealsense.constants import rs_option
 from IPython import embed
 from filter import filter_img
 import stereosound
+import darknet as dn
+
+COLOR_FPS = 60
+COLOR_WIDTH = 640
+COLOR_HEIGHT = 480
 
 DEPTH_FPS = 60
-WIDTH = 320
-HEIGHT = 240
+DEPTH_WIDTH = 320
+DEPTH_HEIGHT = 240
 SI_X = np.deg2rad(59)
 SI_Y = np.deg2rad(46)
 K_X = np.tan(SI_X/2)
 K_Y = np.tan(SI_Y/2)
 
-depth_stream = pyrs.stream.DepthStream(fps=DEPTH_FPS, width=WIDTH, height=HEIGHT)
+depth_stream = pyrs.stream.DepthStream(fps=DEPTH_FPS, width=DEPTH_WIDTH, height=DEPTH_HEIGHT)
+
+color_stream = pyrs.stream.ColorStream(fps=COLOR_FPS, width=COLOR_WIDTH,
+height=COLOR_HEIGHT)
+
+net = dn.load_net("../Detection/config/tiny-yolo-voc.cfg",
+                  "../Detection/model/tiny-yolo-voc.weights",
+                  0)
+meta = dn.load_meta("../Detection/config/voc.data")
+
+def array_to_image(arr):
+    arr = arr.transpose(2,0,1)
+    c = arr.shape[0]
+    h = arr.shape[1]
+    w = arr.shape[2]
+    arr = (arr/255.0).flatten()
+    data = dn.c_array(dn.c_float, arr)
+    im = dn.IMAGE(w,h,c,data)
+    return im
+
+def detect2(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45):
+    boxes = dn.make_boxes(net)
+    probs = dn.make_probs(net)
+    num =   dn.num_boxes(net)
+    dn.network_detect(net, image, thresh, hier_thresh, nms, boxes, probs)
+    res = []
+    for j in range(num):
+        for i in range(meta.classes):
+            if probs[j][i] > 0:
+                res.append((meta.names[i], probs[j][i], (boxes[j].x, boxes[j].y, boxes[j].w, boxes[j].h)))
+    res = sorted(res, key=lambda x: -x[1])
+    dn.free_ptrs(dn.cast(probs, dn.POINTER(dn.c_void_p)), num)
+    return res
+
 
 def naive_avg_distance(frame, x_coo, y_coo):
     return np.mean(frame[y_coo-3:y_coo+3, x_coo-3:x_coo+3])
@@ -48,8 +86,8 @@ def convert_z16_to_bgr(frame):
 
 def transform(x, y, d):
     y_obj = d
-    x_obj = 1.0*d*(x-WIDTH/2)/WIDTH*K_X
-    z_obj = 1.0*d*(y-HEIGHT/2)/HEIGHT*K_Y
+    x_obj = 1.0*d*(x-DEPTH_WIDTH/2)/DEPTH_WIDTH*K_X
+    z_obj = 1.0*d*(y-DEPTH_HEIGHT/2)/DEPTH_HEIGHT*K_Y
     return x_obj, y_obj, z_obj
 
 def bound_contours_with_size_filter(filtered_img):
@@ -65,7 +103,7 @@ def bound_contours_with_size_filter(filtered_img):
 	return contours
 
 with pyrs.Service() as serv:
-    with serv.Device(streams=(depth_stream,)) as dev:
+    with serv.Device(streams=(depth_stream,color_stream)) as dev:
 
         dev.apply_ivcam_preset(0)
 
@@ -80,7 +118,6 @@ with pyrs.Service() as serv:
         last = time.time()
         smoothing = 0.9
         fps_smooth = DEPTH_FPS
-        stereo = stereosound.stereosound()
 
         while True:
             cnt += 1
@@ -92,13 +129,24 @@ with pyrs.Service() as serv:
                 last = now
 
             dev.wait_for_frames()
-            frame = dev.depth
-            print frame[frame.shape[0] / 2, frame.shape[1] / 2]
-            #d = convert_z16_to_bgr(frame)
-            #cv2.putText(d, str(fps_smooth)[:4], (0, 50), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255))
-
-            #cv2.imshow('', d)
-            f_img = filter_img(frame.copy(),1)
+            color_raw = cv2.cvtColor(dev.color, cv2.COLOR_BGR2RGB)
+            square = cv2.resize(color_raw, (416, 416))
+            im = array_to_image(square)
+            dn.rgbgr_image(im)
+            r = detect2(net, meta,im)
+            for label, confidence, bbox in r:
+                bbox = np.array(bbox, dtype='int')
+                cv2.rectangle(square, (bbox[0]-bbox[2]/2, bbox[1]-bbox[3]/2), (bbox[0]+bbox[2]/2, bbox[1]+bbox[3]/2), (255,0,0), 2)
+                cv2.putText(square, 
+                            label,
+                            (bbox[0]-bbox[2]/2, bbox[1]-bbox[3]/2-20),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            0.9,
+                            (0,0,255),
+                            2, cv2.LINE_AA)
+            
+            depth_raw = dev.depth
+            f_img = filter_img(depth_raw.copy(),1)
             temp_img = f_img.copy()
             temp_img = temp_img.astype('float32') / 0x1000
             temp_img *= 255
@@ -106,17 +154,13 @@ with pyrs.Service() as serv:
             contours = bound_contours_with_size_filter(temp_img)
             m = [cv2.moments(i) for i in contours]
             m = [(int(i['m10'] / i['m00']), int(i['m01'] / i['m00'])) for i in m]
-            #print contours
             temp_img = cv2.cvtColor(temp_img, cv2.COLOR_GRAY2RGB)
-            #cv2.drawContours(temp_img, contours, -1, (0, 0, 255), 3)
             for x, y in m:
                 cv2.circle(temp_img, (x, y), 6, (0, 0, 255), thickness = 4)
-                cart_tuple = transform(x,y, frame[y, x])
-                avg_value = naive_avg_distance(frame, x ,y)
-                stereo.play(cart_tuple, avg_value)
-            #cv2.imshow('1', f_img.astype('float32') / 0x1000)
-            #cv2.imshow('2', frame.astype('float32') / 0x1000)
-            cv2.imshow('3', temp_img)
+                cart_tuple = transform(x,y, depth_raw[y, x])
+                avg_value = naive_avg_distance(depth_raw, x ,y)
+            cv2.imshow('gray', temp_img)
+            cv2.imshow('color', square)
             key = cv2.waitKey(1)
             if key & 0xFF == ord('q'):
                 break
