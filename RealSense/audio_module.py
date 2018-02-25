@@ -12,9 +12,8 @@ keyword_dict = {"dog": {"left": 0, "front": 1, "right": 2},
                     "person": {"left": 3, "front": 4, "right": 5},
                     "beep": {"left_low": 6, "left_high": 7, "right_low": 8, "right_high": 9}}
 
-def keyword_2_ind(object, direction):
-    return keyword_dict[object][direction]
-
+def keyword_2_ind(obje, direction):
+    return keyword_dict[obje][direction]
 
 class audio_module:
     def __init__(self):
@@ -41,3 +40,7 @@ class audio_module:
         replacement_thread = [pyaudio_looper.WavePlayerLoop(play_file_name), play_file_name]
         self.thread_pool[num][0].stop()
         self.thread_pool[num] = replacement_thread
+
+    def is_active(self, obj, dire):
+        num = keyword_2_ind(obj, dire)
+        return self.thread_pool[num][0].is_alive()

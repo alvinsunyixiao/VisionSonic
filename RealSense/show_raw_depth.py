@@ -8,12 +8,21 @@ import pyrealsense as pyrs
 from pyrealsense.constants import rs_option
 from IPython import embed
 from filter import filter_img
-import stereosound
+import audio_module
 import darknet as dn
+
+visited_dict = {"dog": {"left": False, "front": False, "right": False},
+                    "person": {"left": False, "front": False, "right": False},
+                    "beep": {"left_low": False, "left_high": False, "right_low": False, "right_high": False}}
+
+beep_all = set(["left_low", "left_high", "right_low", "right_high"])
+person_all = set(["left", "front", "right"])
 
 COLOR_FPS = 60
 COLOR_WIDTH = 640
 COLOR_HEIGHT = 480
+
+HIGH_BEEP_THRESHOLD = 700
 
 DEPTH_FPS = 60
 DEPTH_WIDTH = 320
@@ -42,6 +51,18 @@ def array_to_image(arr):
     data = dn.c_array(dn.c_float, arr)
     im = dn.IMAGE(w,h,c,data)
     return im
+
+def direction_generator(x, y):
+    if x < 416.0 / 3:
+        return "left"
+    elif x < 416.0 / 3 * 2:
+        return "front"
+    return "right"
+
+def beep_direction_generator(x, y):
+    if x < 416.0 / 2:
+        return "left"
+    return "right"
 
 def detect2(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45):
     boxes = dn.make_boxes(net)
@@ -118,6 +139,8 @@ with pyrs.Service() as serv:
         last = time.time()
         smoothing = 0.9
         fps_smooth = DEPTH_FPS
+        am = audio_module.audio_module()
+
 
         while True:
             cnt += 1
@@ -134,17 +157,34 @@ with pyrs.Service() as serv:
             im = array_to_image(square)
             dn.rgbgr_image(im)
             r = detect2(net, meta,im)
+            temp_dire_visited_list = []
             for label, confidence, bbox in r:
+                if "label" == "person":
+                    #hardcoded case
+                    dire = direction_generator(bbox[0], bbox[1])
+                    temp_dire_visited_list.append(dire)
+                    if visited_dict["person"][dire] == False:
+                        am.play("person", dire)
+                        visited_dict["person"][dire] = True
+                    else:
+                        pass
                 bbox = np.array(bbox, dtype='int')
                 cv2.rectangle(square, (bbox[0]-bbox[2]/2, bbox[1]-bbox[3]/2), (bbox[0]+bbox[2]/2, bbox[1]+bbox[3]/2), (255,0,0), 2)
-                cv2.putText(square, 
+                cv2.putText(square,
                             label,
                             (bbox[0]-bbox[2]/2, bbox[1]-bbox[3]/2-20),
                             cv2.FONT_HERSHEY_SIMPLEX,
                             0.9,
                             (0,0,255),
                             2, cv2.LINE_AA)
-            
+
+            temp_dire_visited_list = set(temp_dire_visited_list)
+            person_to_be_close = person_all - temp_dire_visited_list
+            for i in person_to_be_close:
+                if am.is_active("person", i):
+                    #is active and not in current frame
+                    am.stop("person", i)
+                    visited_dict["person"][i] = False
             depth_raw = dev.depth
             f_img = filter_img(depth_raw.copy(),1)
             temp_img = f_img.copy()
@@ -155,10 +195,31 @@ with pyrs.Service() as serv:
             m = [cv2.moments(i) for i in contours]
             m = [(int(i['m10'] / i['m00']), int(i['m01'] / i['m00'])) for i in m]
             temp_img = cv2.cvtColor(temp_img, cv2.COLOR_GRAY2RGB)
+            beep_cur_iter_visited_list = []
             for x, y in m:
                 cv2.circle(temp_img, (x, y), 6, (0, 0, 255), thickness = 4)
-                cart_tuple = transform(x,y, depth_raw[y, x])
-                avg_value = naive_avg_distance(depth_raw, x ,y)
+                dire = beep_direction_generator(x, y)
+                dire = dire.append("_")
+                vg_value = naive_avg_distance(depth_raw, x ,y)
+                if vg_value < HIGH_BEEP_THRESHOLD:
+                    dire.append("high")
+                else:
+                    dire.append("low")
+                beep_cur_iter_visited_list.append(dire)
+                if visited_dict["beep", dire] == False:
+                    am.play("beep", dire)
+                    visited_dict["beep", dire] = True
+                else:
+                    #already ringing!
+                    continue
+                #cart_tuple = transform(x,y, depth_raw[y, x])
+            beep_cur_iter_visited_list = set(beep_cur_iter_visited_list)
+            beep_to_be_closed = beep_cur_iter_visited_list - beep_all
+            for dire in beep_to_be_closed:
+                if am.is_active("beep", dire):
+                    #is active and is not present in current frame
+                    am.stop("beep", dire)
+                    visited_dict["beep"][dire] = False
             cv2.imshow('gray', temp_img)
             cv2.imshow('color', square)
             key = cv2.waitKey(1)
