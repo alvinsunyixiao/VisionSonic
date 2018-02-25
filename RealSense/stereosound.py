@@ -9,12 +9,13 @@ from openal.audio import SoundSink, SoundSource, SoundListener
 import time
 import math
 import config
+from IPython import embed
 
 #do nothing for now. Should be implemented if sound is distant or distorted
 def normalize(a_vector):
     ret = np.array([a_vector[0], a_vector[1], a_vector[2]])
     scalar_ = np.sqrt(np.sum(ret ** 2))
-    return ret / scalar_
+    return ret / scalar_ * 5
 
 class stereosound:
     def __init__(self):
@@ -45,10 +46,16 @@ class stereosound:
         return len(self.cutoff) - 1
 
     def play(self, coord_tuple, avg_dis):
+        if(not (np.array(coord_tuple).any())): return
         source_ind = self.determine_cutoff(avg_dis)
+        print "calling sources" + str(source_ind)
         use_source = self.sources[source_ind]
+        #embed()
+        if not use_source.queue_empty():
+            return
         use_source.queue(self.data)
         coord_tuple = normalize(coord_tuple)
         use_source.position = [coord_tuple[0], coord_tuple[1], coord_tuple[2]]
+        #time.sleep(0.02)
         self.sink.update()
         self.sink.play(use_source)
