@@ -181,11 +181,6 @@ with pyrs.Service() as serv:
 
             #temp_dire_visited_list = set(temp_dire_visited_list)
             #person_to_be_close = person_all - temp_dire_visited_list
-            for i in person_to_be_close:
-                if am.is_active("person", i):
-                    #is active and not in current frame
-                    am.stop("person", i)
-                    visited_dict["person"][i] = False
             depth_raw = dev.depth
             f_img = filter_img(depth_raw.copy(),1)
             temp_img = f_img.copy()
