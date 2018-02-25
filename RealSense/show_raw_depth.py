@@ -166,14 +166,7 @@ with pyrs.Service() as serv:
                     #hardcoded case
                     dire = direction_generator(bbox[0], bbox[1])
                     #temp_dire_visited_list.append(dire)
-                    if visited_dict["person"][dire] == False:
-                        print "play cases!"
-                        am.play("person", dire)
-                        visited_dict["person"][dire] = True
-                    elif not am.is_active("person", dire):
-                        am.stop("person", dire)
-                        print("STOPPED A DEAD PERSON SOUND!\n\n\n")
-                        visited_dict["person"][dire] = False
+                    am.play("person", dire)
                         #person_to_be_close.append(dire)
                 bbox = np.array(bbox, dtype='int')
                 cv2.rectangle(square, (bbox[0]-bbox[2]/2, bbox[1]-bbox[3]/2), (bbox[0]+bbox[2]/2, bbox[1]+bbox[3]/2), (255,0,0), 2)
