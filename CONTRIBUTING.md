@@ -1,6 +1,12 @@
 # Contributing to VisionSonic
 
+### Welcome, contributors to VisionSonic!!!
+
 Thank you for your interest in contributing to VisionSonic! Although we are still at a starting stage, every member of the team is very confident and passionate. This document will outline the basics of where to start if you wish to contribute to the project. There are many ways to help us out and and we appreciate all of them. We look forward to your contribution!
+
+### Development environment details
+
+* Please see README.md
 
 ### Issues and future features
 
