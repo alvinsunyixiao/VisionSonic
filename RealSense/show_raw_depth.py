@@ -199,16 +199,16 @@ with pyrs.Service() as serv:
             for x, y in m:
                 cv2.circle(temp_img, (x, y), 6, (0, 0, 255), thickness = 4)
                 dire = beep_direction_generator(x, y)
-                dire = dire.append("_")
+                dire = dire + "_"
                 vg_value = naive_avg_distance(depth_raw, x ,y)
                 if vg_value < HIGH_BEEP_THRESHOLD:
-                    dire.append("high")
+                    dire += "high"
                 else:
-                    dire.append("low")
+                    dire += "low"
                 beep_cur_iter_visited_list.append(dire)
-                if visited_dict["beep", dire] == False:
+                if visited_dict["beep"][dire] == False:
                     am.play("beep", dire)
-                    visited_dict["beep", dire] = True
+                    visited_dict["beep"][dire] = True
                 else:
                     #already ringing!
                     continue
