@@ -157,17 +157,24 @@ with pyrs.Service() as serv:
             im = array_to_image(square)
             dn.rgbgr_image(im)
             r = detect2(net, meta,im)
-            temp_dire_visited_list = []
+            #temp_dire_visited_list = []
+            #person_to_be_close = []
             for label, confidence, bbox in r:
-                if "label" == "person":
+                #embed()
+                if label == "person":
+                    print "person cases!"
                     #hardcoded case
                     dire = direction_generator(bbox[0], bbox[1])
-                    temp_dire_visited_list.append(dire)
+                    #temp_dire_visited_list.append(dire)
                     if visited_dict["person"][dire] == False:
+                        print "play cases!"
                         am.play("person", dire)
                         visited_dict["person"][dire] = True
-                    else:
-                        pass
+                    elif not am.is_active("person", dire):
+                        am.stop("person", dire)
+                        print("STOPPED A DEAD PERSON SOUND!\n\n\n")
+                        visited_dict["person"][dire] = False
+                        #person_to_be_close.append(dire)
                 bbox = np.array(bbox, dtype='int')
                 cv2.rectangle(square, (bbox[0]-bbox[2]/2, bbox[1]-bbox[3]/2), (bbox[0]+bbox[2]/2, bbox[1]+bbox[3]/2), (255,0,0), 2)
                 cv2.putText(square,
@@ -178,13 +185,15 @@ with pyrs.Service() as serv:
                             (0,0,255),
                             2, cv2.LINE_AA)
 
-            temp_dire_visited_list = set(temp_dire_visited_list)
-            person_to_be_close = person_all - temp_dire_visited_list
+            #temp_dire_visited_list = set(temp_dire_visited_list)
+            #person_to_be_close = person_all - temp_dire_visited_list
+            '''
             for i in person_to_be_close:
                 if am.is_active("person", i):
                     #is active and not in current frame
                     am.stop("person", i)
                     visited_dict["person"][i] = False
+            '''
             depth_raw = dev.depth
             f_img = filter_img(depth_raw.copy(),1)
             temp_img = f_img.copy()
@@ -199,7 +208,7 @@ with pyrs.Service() as serv:
             for x, y in m:
                 cv2.circle(temp_img, (x, y), 6, (0, 0, 255), thickness = 4)
                 dire = beep_direction_generator(x, y)
-                dire = dire + "_"
+                dire += "_"
                 vg_value = naive_avg_distance(depth_raw, x ,y)
                 if vg_value < HIGH_BEEP_THRESHOLD:
                     dire += "high"
@@ -214,7 +223,7 @@ with pyrs.Service() as serv:
                     continue
                 #cart_tuple = transform(x,y, depth_raw[y, x])
             beep_cur_iter_visited_list = set(beep_cur_iter_visited_list)
-            beep_to_be_closed = beep_cur_iter_visited_list - beep_all
+            beep_to_be_closed = beep_all - beep_cur_iter_visited_list
             for dire in beep_to_be_closed:
                 if am.is_active("beep", dire):
                     #is active and is not present in current frame
@@ -225,6 +234,9 @@ with pyrs.Service() as serv:
             key = cv2.waitKey(1)
             if key & 0xFF == ord('q'):
                 break
+                for thread in am.thread_pool:
+                    if thread.is_alive():
+                        thread.stop()
             elif key & 0xFF == ord('s'):
                 np.save('debug', f_img)
             elif key & 0xFF == ord('p'):
